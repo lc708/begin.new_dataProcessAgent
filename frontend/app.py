@@ -85,14 +85,46 @@ st.markdown("""
     line-height: 1.4;
     color: #666;
 }
+.github-button {
+    background-color: #24292e !important;
+    color: white !important;
+    padding: 8px 16px;
+    border-radius: 6px;
+    text-decoration: none !important;
+    display: inline-block;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    transition: all 0.2s ease;
+    border: none;
+}
+.github-button:hover {
+    background-color: #0366d6 !important;
+    color: white !important;
+    text-decoration: none !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
 </style>
 """, unsafe_allow_html=True)
 
 
 def main():
     """主应用函数"""
-    # 标题
-    st.markdown('<h1 class="main-header">🔄 数据处理Agent</h1>', unsafe_allow_html=True)
+    
+    # 标题和GitHub链接
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        st.markdown('<h1 class="main-header">🔄 数据处理Agent</h1>', unsafe_allow_html=True)
+    with col2:
+        st.markdown("""
+        <div style="text-align: right; margin-top: 20px;">
+            <a href="https://github.com/lc708/begin.new_dataProcessAgent" target="_blank" class="github-button">
+                📁 GitHub源码
+            </a>
+        </div>
+        """, unsafe_allow_html=True)
+    
     st.markdown("基于MACore框架的智能数据标准化和预处理Agent - powered by [begin.new](https://www.begin.new/)")
     
     # 侧边栏
