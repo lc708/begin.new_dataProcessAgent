@@ -7,6 +7,31 @@ import pandas as pd
 from typing import List, Tuple, Dict, Any
 
 
+def _safe_to_string(value) -> str:
+    """
+    安全地将任意类型转换为字符串
+    
+    Args:
+        value: 任意类型的值
+        
+    Returns:
+        str: 转换后的字符串
+    """
+    if value is None:
+        return ''
+    
+    try:
+        if isinstance(value, (int, float)):
+            # 对于数值类型，确保大整数精度不丢失
+            if isinstance(value, float) and value.is_integer():
+                return str(int(value))
+            return str(value)
+        else:
+            return str(value)
+    except (ValueError, TypeError):
+        return str(value)
+
+
 def detect_sensitive_field(column_name: str, sample_values: List[str], max_samples: int = 20) -> str:
     """
     检测字段是否包含敏感信息
@@ -115,22 +140,22 @@ def _detect_by_sample_values(sample_values: List[str]) -> str:
     total_samples = len(sample_values)
     
     # 手机号检测
-    phone_matches = sum(1 for val in sample_values if _is_phone_number(str(val)))
+    phone_matches = sum(1 for val in sample_values if _is_phone_number(val))
     if phone_matches / total_samples > 0.7:  # 70%以上匹配
         return 'phone'
     
     # 身份证检测
-    id_matches = sum(1 for val in sample_values if _is_id_card(str(val)))
+    id_matches = sum(1 for val in sample_values if _is_id_card(val))
     if id_matches / total_samples > 0.7:
         return 'id_card'
     
     # 邮箱检测
-    email_matches = sum(1 for val in sample_values if _is_email(str(val)))
+    email_matches = sum(1 for val in sample_values if _is_email(val))
     if email_matches / total_samples > 0.7:
         return 'email'
     
     # 中文姓名检测
-    name_matches = sum(1 for val in sample_values if _is_chinese_name(str(val)))
+    name_matches = sum(1 for val in sample_values if _is_chinese_name(val))
     if name_matches / total_samples > 0.7:
         return 'name'
     
@@ -147,23 +172,28 @@ def _validate_field_type(sample_values: List[str], field_type: str) -> bool:
         'id_card': _is_id_card,
         'email': _is_email,
         'name': _is_chinese_name,
-        'address': lambda x: len(str(x)) > 5  # 地址通常较长
+        'address': lambda x: len(_safe_to_string(x)) > 5  # 地址通常较长
     }
     
     if field_type not in validation_functions:
         return True
     
     validator = validation_functions[field_type]
-    valid_count = sum(1 for val in sample_values if validator(str(val)))
+    valid_count = sum(1 for val in sample_values if validator(val))
     
     # 至少50%的样本值符合格式
     return valid_count / len(sample_values) >= 0.5
 
 
-def _is_phone_number(value: str) -> bool:
+def _is_phone_number(value) -> bool:
     """检测是否为手机号"""
+    # 安全转换为字符串
+    value_str = _safe_to_string(value)
+    if not value_str:
+        return False
+    
     # 清理空格和特殊字符
-    cleaned = re.sub(r'[\s\-\(\)\+]', '', value)
+    cleaned = re.sub(r'[\s\-\(\)\+]', '', value_str)
     
     # 中国手机号格式 (11位数字，以1开头)
     china_mobile = re.match(r'^1[3-9]\d{9}$', cleaned)
@@ -178,16 +208,22 @@ def _is_phone_number(value: str) -> bool:
     international_general = re.match(r'^\d{7,15}$', cleaned) and len(cleaned) >= 7
     
     # 包含分机号的格式 (x后跟数字)
-    with_extension = re.search(r'\d{7,15}x\d+', value.replace(' ', '').replace('-', ''))
+    cleaned_for_extension = value_str.replace(' ', '').replace('-', '')
+    with_extension = re.search(r'\d{7,15}x\d+', cleaned_for_extension)
     
     return bool(china_mobile or china_international or us_mobile or 
                 (international_general and len(cleaned) >= 10) or with_extension)
 
 
-def _is_id_card(value: str) -> bool:
+def _is_id_card(value) -> bool:
     """检测是否为身份证号"""
-    # 清理空格
-    cleaned = value.replace(' ', '').upper()
+    # 安全转换为字符串
+    value_str = _safe_to_string(value)
+    if not value_str:
+        return False
+    
+    # 清理空格并转大写
+    cleaned = value_str.replace(' ', '').upper()
     
     # 18位身份证号格式
     if len(cleaned) == 18:
@@ -203,19 +239,29 @@ def _is_id_card(value: str) -> bool:
     return False
 
 
-def _is_email(value: str) -> bool:
+def _is_email(value) -> bool:
     """检测是否为邮箱地址"""
+    # 安全转换为字符串
+    value_str = _safe_to_string(value)
+    if not value_str:
+        return False
+    
     pattern = re.compile(
         r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     )
-    return bool(pattern.match(value))
+    return bool(pattern.match(value_str))
 
 
-def _is_chinese_name(value: str) -> bool:
+def _is_chinese_name(value) -> bool:
     """检测是否为中文姓名"""
+    # 安全转换为字符串
+    value_str = _safe_to_string(value)
+    if not value_str:
+        return False
+    
     # 2-4个中文字符组成的姓名
     pattern = re.compile(r'^[\u4e00-\u9fa5]{2,4}$')
-    return bool(pattern.match(value.strip()))
+    return bool(pattern.match(value_str.strip()))
 
 
 if __name__ == "__main__":
