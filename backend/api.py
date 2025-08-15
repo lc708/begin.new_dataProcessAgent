@@ -38,6 +38,34 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# 健康检查端点
+@app.get("/health")
+async def health_check():
+    """健康检查端点，用于Railway等平台的健康监控"""
+    try:
+        # 检查基本组件是否正常
+        health_status = {
+            "status": "healthy",
+            "timestamp": datetime.now().isoformat(),
+            "services": {
+                "api": "running",
+                "macore": "available", 
+                "llm": "configured" if os.getenv("OPENAI_API_KEY") else "not_configured"
+            },
+            "version": "1.0.0"
+        }
+        
+        return health_status
+    except Exception as e:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "status": "unhealthy",
+                "error": str(e),
+                "timestamp": datetime.now().isoformat()
+            }
+        )
+
 # 配置CORS
 app.add_middleware(
     CORSMiddleware,

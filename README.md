@@ -82,7 +82,7 @@
 - **输入**：CSV、Excel (.xlsx/.xls)、JSON
 - **输出**：CSV、Excel、JSON
 
-## 📦 安装和部署
+## 📦 本地开发环境设置
 
 ### 环境要求
 - Python 3.8+
@@ -96,7 +96,7 @@ git clone <project-url>
 cd bpapp_004_dataprocessing
 ```
 
-2. **创建并激活Python虚拟环境**
+2. **创建并激活Python虚拟环境** ⚠️ **重要步骤**
 ```bash
 # 创建虚拟环境
 python -m venv venv
@@ -110,13 +110,14 @@ source venv/bin/activate
 
 3. **安装依赖**
 ```bash
+# 确保虚拟环境已激活（命令行前应显示 (venv)）
 pip install -r requirements.txt
 ```
 
 4. **配置环境变量**
 ```bash
 cp env.template .env
-# 编辑 .env 文件，添加必要的API密钥（如OPENAI_API_KEY等）
+# 编辑 .env 文件，添加必要的API密钥
 ```
 
 5. **启动后端服务**
@@ -135,17 +136,105 @@ python run_frontend.py
 # 前端界面将在 http://localhost:8501 启动
 ```
 
+### 验证安装
+```bash
+# 快速验证
+python -c "import streamlit, fastapi, pandas, numpy; print('✅ 所有依赖安装成功！')"
+
+# 检查API健康状态
+curl http://localhost:8000/health
+```
+
+## 🚢 生产环境部署 (Railway)
+
+### 部署文件说明
+项目已包含完整的Railway部署配置：
+- `railway.json` - Railway平台配置
+- `Dockerfile` - Docker构建配置
+- `start_services.py` - 统一启动脚本
+
+### Railway部署步骤
+
+1. **连接GitHub仓库**
+   - 登录 [Railway](https://railway.app)
+   - 点击 "New Project" → "Deploy from GitHub repo"
+   - 选择您的项目仓库
+
+2. **配置环境变量**
+   
+   在Railway项目设置 → Variables 中添加：
+   ```bash
+   # 🔑 必需变量
+   OPENAI_API_KEY=sk-your-openai-api-key-here
+   LLM_PROVIDER=openai
+   
+   # 🌐 应用配置
+   RAILWAY_ENVIRONMENT=production
+   BASE_URL=https://app-dataprocessing.begin.new
+   BACKEND_PORT=8000
+   FRONTEND_PORT=8501
+   BACKEND_API_URL=https://app-dataprocessing.begin.new/api/v1
+   
+   # 📊 Streamlit配置
+   STREAMLIT_SERVER_HEADLESS=true
+   STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+   
+   # 🛠 系统配置
+   PYTHONPATH=/app
+   PYTHONUNBUFFERED=1
+   LOG_LEVEL=INFO
+   TZ=Asia/Shanghai
+   ```
+
+3. **配置域名**
+   - 进入项目 → Settings → Networking
+   - 添加自定义域名: `app-dataprocessing.begin.new`
+
+4. **部署验证**
+   - 检查构建日志确认成功
+   - 访问健康检查: `https://app-dataprocessing.begin.new/health`
+   - 测试文件上传和处理功能
+
+### 部署故障排除
+
+**构建失败**
+- 检查 `requirements.txt` 依赖版本
+- 查看构建日志中的具体错误
+
+**服务启动失败**
+- 验证环境变量设置完整性
+- 确认API密钥有效性
+
+**功能异常**
+- 检查 `/health` 端点状态
+- 验证LLM API配额限制
+
 ## 🎯 使用指南
 
 ### 基础使用流程
 
-1. **访问前端界面**：打开 http://localhost:8501
+1. **访问前端界面**：打开应用地址
 2. **上传数据文件**：支持拖拽上传CSV/Excel/JSON文件
 3. **数据质量检查**：快速检查数据基本质量
 4. **配置处理参数**：选择默认配置或自定义配置
 5. **执行数据处理**：一键启动数据处理流程
 6. **查看处理结果**：多维度展示处理结果和质量报告
 7. **导出处理数据**：下载处理后的清洁数据
+
+### 脱敏参数调整
+
+如果脱敏字段太多，可以调整 **敏感度阈值**：
+
+| 阈值设置 | 脱敏字段数量 | 适用场景 |
+|---------|-------------|---------|
+| 0.5-0.6 | 很多字段 | 高安全要求 |
+| 0.7 (默认) | 中等字段 | 平衡安全性和可用性 |
+| 0.8-0.9 | 较少字段 | 注重数据可用性 |
+
+**调整方法**：
+1. 取消勾选 "使用默认配置"
+2. 在 "数据脱敏" 部分调整 "敏感性检测阈值" 滑块
+3. 向右调高阈值减少脱敏字段，向左调低阈值增加脱敏字段
 
 ### API使用示例
 
@@ -196,7 +285,7 @@ missing_handling:
 
 masking_rules:
   enable_auto_detection: true
-  sensitivity_threshold: 0.7
+  sensitivity_threshold: 0.7  # 调整此值控制脱敏严格程度
   column_rules:
     phone:
       type: "phone"
@@ -232,31 +321,7 @@ user_id,user_name,age,phone,email,salary
 - 🔒 敏感字段脱敏：姓名、手机号、邮箱自动脱敏
 - 📊 质量得分提升：76% → 95%
 
-## 🧪 测试和开发
-
-### 运行示例
-```bash
-# 确保已激活虚拟环境
-python main.py  # 运行示例数据处理
-```
-
-### 开发环境设置
-```bash
-# 1. 创建并激活虚拟环境
-python -m venv venv
-source venv/bin/activate  # Linux/macOS
-# 或 venv\Scripts\activate  # Windows
-
-# 2. 安装开发依赖
-pip install -r requirements.txt
-
-# 3. 设置环境变量
-cp env.template .env
-# 编辑 .env 文件，添加你的API密钥
-
-# 4. 验证安装
-python -c "import streamlit, fastapi, pandas; print('安装成功！')"
-```
+## 🧪 开发和测试
 
 ### 虚拟环境管理
 ```bash
@@ -272,24 +337,74 @@ rm -rf venv  # Linux/macOS
 # 或手动删除 venv 文件夹  # Windows
 ```
 
-## 📚 开发文档
+### 开发环境验证
+```bash
+# 运行示例数据处理
+python main.py
 
-详细的开发文档请参考：
-- [设计文档](docs/design.md) - 系统架构和技术设计
-- [开发记录](docs/detail_note.md) - 详细的开发过程记录
-- [API文档](http://localhost:8000/docs) - 后端API接口文档
+# 验证API文档
+# 访问 http://localhost:8000/docs
+```
 
-## 💡 常见问题
+### 常见问题
 
-### Q: 如何添加新的脱敏策略？
-A: 在 `utils/data_masking.py` 中添加新的脱敏函数，并在配置验证器中更新策略枚举。
+**Q: 虚拟环境激活失败？**
+```bash
+# Windows PowerShell权限问题
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
-### Q: 如何集成新的数据源？
-A: 在 `main.py` 中添加新的数据读取函数，支持新的文件格式或数据库连接。
+# 重新创建虚拟环境
+rm -rf venv
+python -m venv venv
+```
 
-### Q: 如何自定义质量指标？
-A: 在 `utils/quality_metrics.py` 中添加新的质量计算函数，并更新报告生成逻辑。
+**Q: 依赖安装失败？**
+```bash
+# 升级pip
+python -m pip install --upgrade pip
+
+# 使用国内镜像源
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/
+```
+
+**Q: 如何添加新的脱敏策略？**
+
+在 `utils/data_masking.py` 中添加新的脱敏函数，并在配置验证器中更新策略枚举。
+
+**Q: 如何自定义质量指标？**
+
+在 `utils/quality_metrics.py` 中添加新的质量计算函数，并更新报告生成逻辑。
+
+## 💡 技术特色
+
+### LLM调用说明
+系统仅在 **数据脱敏Agent节点** 中调用LLM，用于：
+- 智能识别可能的敏感字段
+- 对规则难以判断的字段进行智能分析
+- 提供字段敏感性评分
+
+### 处理流程
+1. 🔍 数据验证和质量检查
+2. 📋 表结构标准化
+3. 🛠️ 缺失值智能填充  
+4. 🤖 AI敏感字段检测 ← **LLM调用点**
+5. 🛡️ 数据脱敏处理
+6. 🎯 特征工程（可选）
+7. 📊 质量报告生成
+
+## 📚 API文档
+
+### 核心接口
+- `POST /api/v1/process-data` - 数据处理主接口
+- `GET /api/v1/processing-status/{job_id}` - 处理状态查询
+- `POST /api/v1/validate-config` - 配置验证
+- `GET /api/v1/default-config` - 获取默认配置
+- `GET /health` - 健康检查端点
+
+详细API文档访问：`http://localhost:8000/docs`
 
 ---
 
 **让数据处理变得简单、安全、智能！** 🚀
+
+**部署完成后访问：https://app-dataprocessing.begin.new** 🌐

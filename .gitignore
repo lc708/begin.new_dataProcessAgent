@@ -102,9 +102,21 @@ __pycache__/
 *.pyw
 *.pyz
 
-#project specific
+# Project specific
 venv/
 .cursor/
 .trae/
 docs/
+
+# Deployment and logs
+logs/
+temp/
+uploads/
+*.log
+
+# Railway specific
+.railway/
+
+# Keep docs but exclude sensitive files
+# docs/
 examples/
