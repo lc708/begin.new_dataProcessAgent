@@ -75,6 +75,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 根路径重定向到前端界面
+@app.get("/")
+async def root():
+    """根路径重定向到前端界面"""
+    from fastapi.responses import RedirectResponse
+    
+    # 在Railway生产环境中，Nginx会将根路径代理到前端
+    if os.getenv('RAILWAY_ENVIRONMENT') == 'production':
+        # 生产环境下，这个端点主要用于内部调用
+        return {
+            "message": "数据处理Agent API服务",
+            "status": "running",
+            "note": "用户请求通过Nginx路由到前端Streamlit界面",
+            "api_docs": "/docs",
+            "health_check": "/health"
+        }
+    else:
+        # 本地开发环境重定向到前端
+        return RedirectResponse(url="http://localhost:8501")
+
 # 全局存储，用于保存处理任务状态
 PROCESSING_JOBS: Dict[str, Dict[str, Any]] = {}
 

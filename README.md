@@ -147,13 +147,28 @@ curl http://localhost:8000/health
 
 ## 🚢 生产环境部署 (Railway)
 
-### 部署文件说明
-项目已包含完整的Railway部署配置：
-- `railway.json` - Railway平台配置
-- `Dockerfile` - Docker构建配置
-- `start_services.py` - 统一启动脚本
+### 🏗️ 部署架构
+项目使用Nginx + Supervisor架构，实现前后端统一部署：
 
-### Railway部署步骤
+```
+Railway容器
+├── Nginx (动态端口) - 反向代理
+│   ├── / → Streamlit前端界面
+│   ├── /api/ → FastAPI后端API
+│   ├── /docs → API文档
+│   └── /health → 健康检查
+├── FastAPI后端 (localhost:8000)
+└── Streamlit前端 (localhost:8501)
+```
+
+### 📁 部署文件说明
+- `railway.json` - Railway平台配置
+- `Dockerfile` - Docker构建配置（包含Nginx+Supervisor）
+- `nginx.conf` - Nginx反向代理配置
+- `supervisord.conf` - 进程管理配置
+- `start_with_nginx.sh` - 启动脚本
+
+### 🚀 Railway部署步骤
 
 1. **连接GitHub仓库**
    - 登录 [Railway](https://railway.app)
@@ -162,52 +177,61 @@ curl http://localhost:8000/health
 
 2. **配置环境变量**
    
-   在Railway项目设置 → Variables 中添加：
+   在Railway项目设置 → Variables 中**只需添加**以下核心变量：
    ```bash
-   # 🔑 必需变量
+   # 🔑 LLM配置（必需）
    OPENAI_API_KEY=sk-your-openai-api-key-here
    LLM_PROVIDER=openai
+   OPENAI_MODEL=gpt-4o
    
-   # 🌐 应用配置
+   # 🌐 应用配置（必需）
    RAILWAY_ENVIRONMENT=production
    BASE_URL=https://app-dataprocessing.begin.new
-   BACKEND_PORT=8000
-   FRONTEND_PORT=8501
-   BACKEND_API_URL=https://app-dataprocessing.begin.new/api/v1
    
-   # 📊 Streamlit配置
-   STREAMLIT_SERVER_HEADLESS=true
-   STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
-   
-   # 🛠 系统配置
+   # 🛠 系统配置（推荐）
    PYTHONPATH=/app
    PYTHONUNBUFFERED=1
    LOG_LEVEL=INFO
    TZ=Asia/Shanghai
    ```
+   
+   **注意**：不需要配置端口相关变量，Nginx会自动处理端口路由。
 
-3. **配置域名**
+3. **配置自定义域名**
    - 进入项目 → Settings → Networking
    - 添加自定义域名: `app-dataprocessing.begin.new`
 
 4. **部署验证**
-   - 检查构建日志确认成功
+   - 检查构建日志确认Nginx+Supervisor启动成功
+   - 访问前端界面: `https://app-dataprocessing.begin.new/`
+   - 访问API文档: `https://app-dataprocessing.begin.new/docs`
    - 访问健康检查: `https://app-dataprocessing.begin.new/health`
-   - 测试文件上传和处理功能
 
-### 部署故障排除
+### 🔧 部署故障排除
 
 **构建失败**
 - 检查 `requirements.txt` 依赖版本
-- 查看构建日志中的具体错误
+- 确认Dockerfile中的系统依赖安装是否成功
+- 查看构建日志中的具体错误信息
 
 **服务启动失败**
-- 验证环境变量设置完整性
-- 确认API密钥有效性
+- 检查Supervisor日志：查看后端、前端、Nginx是否正常启动
+- 验证环境变量设置完整性（特别是OPENAI_API_KEY）
+- 确认端口配置：Railway会自动分配PORT给Nginx
+
+**访问问题**
+- 健康检查失败：访问 `/health` 端点检查后端状态
+- 前端无法访问：检查Supervisor中的frontend进程状态
+- API调用失败：验证 `/docs` 页面是否可以访问
 
 **功能异常**
-- 检查 `/health` 端点状态
-- 验证LLM API配额限制
+- LLM调用失败：检查API密钥有效性和配额限制
+- 文件上传问题：确认前后端通信正常
+- 数据处理错误：查看后端API日志
+
+**日志查看**
+- Railway Dashboard → Deployments → Logs
+- 关键日志标识：`[nginx]`, `[backend]`, `[frontend]`, `[supervisor]`
 
 ## 🎯 使用指南
 
@@ -394,14 +418,29 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/
 
 ## 📚 API文档
 
-### 核心接口
+### 🌐 访问方式
+
+#### **生产环境** (Railway)
+- **API文档**: `https://app-dataprocessing.begin.new/docs`
+- **健康检查**: `https://app-dataprocessing.begin.new/health`  
+- **前端界面**: `https://app-dataprocessing.begin.new/`
+
+#### **本地开发环境**
+- **API文档**: `http://localhost:8000/docs`
+- **健康检查**: `http://localhost:8000/health`
+- **前端界面**: `http://localhost:8501`
+
+### 🔌 核心接口
 - `POST /api/v1/process-data` - 数据处理主接口
 - `GET /api/v1/processing-status/{job_id}` - 处理状态查询
 - `POST /api/v1/validate-config` - 配置验证
 - `GET /api/v1/default-config` - 获取默认配置
+- `POST /api/v1/export-data/{job_id}` - 数据导出接口
 - `GET /health` - 健康检查端点
 
-详细API文档访问：`http://localhost:8000/docs`
+### 🏗️ 架构说明
+- **生产环境**: Nginx反向代理，所有请求通过统一域名访问
+- **本地环境**: 前后端独立运行在不同端口
 
 ---
 
