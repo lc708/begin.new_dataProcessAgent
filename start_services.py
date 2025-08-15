@@ -45,13 +45,17 @@ class ServiceManager:
         """启动后端服务"""
         try:
             backend_port = os.getenv('BACKEND_PORT', '8000')
+            # 构建uvicorn启动命令
             cmd = [
                 'uvicorn', 
                 'backend.api:app',
                 '--host', '0.0.0.0',
-                '--port', backend_port,
-                '--reload' if os.getenv('RAILWAY_ENVIRONMENT') != 'production' else '--no-reload'
+                '--port', backend_port
             ]
+            
+            # 根据环境决定是否启用reload（生产环境不启用reload）
+            if os.getenv('RAILWAY_ENVIRONMENT') != 'production':
+                cmd.append('--reload')
             
             logger.info(f"启动后端服务: {' '.join(cmd)}")
             self.backend_process = subprocess.Popen(
