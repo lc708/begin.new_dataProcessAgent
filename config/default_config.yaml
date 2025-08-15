@@ -1,0 +1,28 @@
+# 数据处理Agent默认配置文件
+
+standardization:
+  enable_column_rename: true
+  naming_convention: "snake_case"  # snake_case, camelCase, PascalCase
+  remove_duplicate_columns: true
+  remove_empty_columns: true
+  auto_detect_types: true
+  custom_type_mapping: {}
+
+missing_handling:
+  default_strategy: "mean"  # mean, median, mode, forward_fill, backward_fill, drop, custom
+  column_strategies: {}
+  custom_fill_values: {}
+  missing_threshold: 0.9  # 缺失率阈值，超过则删除列
+
+masking_rules:
+  enable_auto_detection: true
+  default_strategy: "partial"  # partial, hash, random, remove
+  column_rules: {}
+  sensitivity_threshold: 0.8
+
+feature_extraction:
+  enable_extraction: false
+  extract_numeric_stats: true
+  extract_text_features: true
+  extract_datetime_features: true
+  custom_features: []

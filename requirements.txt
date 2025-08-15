@@ -1,0 +1,27 @@
+# Core dependencies
+openai>=1.0.0              # For OpenAI and DeepSeek LLM calls
+python-dotenv>=1.0.0       # For loading environment variables
+
+# Backend API
+fastapi>=0.104.0
+uvicorn>=0.24.0
+pydantic>=2.5.0
+sqlalchemy>=2.0.0
+python-multipart>=0.0.6
+
+# Data processing
+pandas>=2.1.0
+numpy>=1.24.0
+openpyxl>=3.1.0
+
+# Frontend
+streamlit>=1.28.0
+plotly>=5.17.0
+requests>=2.31.0
+
+# Utilities
+PyYAML>=6.0.1
+
+# Optional dependencies (uncomment if needed)
+# google-generativeai>=0.3.0  # For Google Gemini support
+# duckduckgo-search>=3.8.0   # For DuckDuckGo search (no API key required)
