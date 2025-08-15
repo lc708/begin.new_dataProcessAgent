@@ -27,16 +27,16 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 复制应用代码
 COPY . .
 
-# 复制配置文件
+# 复制启动脚本并立即设置权限
+COPY start_with_nginx.sh /start_with_nginx.sh
+RUN chmod +x /start_with_nginx.sh
+
+# 复制其他配置文件
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-COPY start_with_nginx.sh /start_with_nginx.sh
 
 # 创建必要的目录
 RUN mkdir -p logs temp uploads /var/log/supervisor
-
-# 设置权限
-RUN chmod +x start_with_nginx.sh
 
 # 健康检查 - 检查Nginx端口
 HEALTHCHECK --interval=30s --timeout=30s --start-period=60s --retries=3 \
